@@ -197,6 +197,27 @@ class _MapaLocaisState extends State<MapaLocais> {
     }
   }
 
+  Future<String> getLocationByCoordinates(double latitude, double longitude) async {
+  final url = 'https://nominatim.openstreetmap.org/reverse?lat=$latitude&lon=$longitude&format=json&addressdetails=1';
+
+  final response = await http.get(Uri.parse(url));
+
+  if (response.statusCode == 200) {
+    var data = json.decode(response.body);
+    var address = data['address'];
+    
+    if (address != null) {
+      // Abaixo você pode escolher os campos que quer, por exemplo, cidade, país, etc.
+      String location = '${address['road']}, ${address['city']}, ${address['country']}';
+      return location;
+    } else {
+      return 'Localização não encontrada.';
+    }
+  } else {
+    throw Exception('Falha ao obter a localização');
+  }
+}
+
   void _navigateToAvaliarLocalPage() {
     if (latitude != null && longitude != null) {
       Navigator.push(
