@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -177,10 +176,16 @@ class _MapaLocaisState extends State<MapaLocais> {
     );
   }
 
+  // Atualiza a latitude e longitude e move o mapa
   void _moveToLocation(double lat, double lon) {
+    setState(() {
+      latitude = lat;
+      longitude = lon;
+    });
     _mapController.move(LatLng(lat, lon), 15.0);
   }
 
+  // Função para buscar locais via API
   Future<void> _searchLocation(String query) async {
     final url = Uri.parse('https://nominatim.openstreetmap.org/search?q=$query&format=json&addressdetails=1&limit=5');
     final response = await http.get(url);
@@ -197,27 +202,45 @@ class _MapaLocaisState extends State<MapaLocais> {
     }
   }
 
+  // Função para obter a localização com base nas coordenadas
   Future<String> getLocationByCoordinates(double latitude, double longitude) async {
-  final url = 'https://nominatim.openstreetmap.org/reverse?lat=$latitude&lon=$longitude&format=json&addressdetails=1';
+    final url = 'https://nominatim.openstreetmap.org/reverse?lat=$latitude&lon=$longitude&format=json&addressdetails=1';
 
-  final response = await http.get(Uri.parse(url));
+    final response = await http.get(Uri.parse(url));
 
-  if (response.statusCode == 200) {
-    var data = json.decode(response.body);
-    var address = data['address'];
-    
-    if (address != null) {
-      // Abaixo você pode escolher os campos que quer, por exemplo, cidade, país, etc.
-      String location = '${address['road']}, ${address['city']}, ${address['country']}';
-      return location;
+    if (response.statusCode == 200) {
+      var data = json.decode(response.body);
+      var address = data['address'];
+
+      if (address != null) {
+        // Tenta obter o número da casa
+        String? houseNumber = address['house_number'];
+
+        // Tenta obter a cidade de diferentes campos
+        String? city = address['city'] ?? 
+            address['town'] ?? 
+            address['village'] ?? 
+            address['hamlet'] ?? 
+            address['suburb'];
+
+        // Monta a string de localização
+        String road = address['road'] ?? 'Endereço não especificado';
+        String country = address['country'] ?? 'País não especificado';
+
+        // Formata o endereço com o número da casa, se existir
+        String formattedAddress = '$road,${houseNumber != null ? '$houseNumber ' : 'número não encontrado '}, ${city ?? 'Localidade não especificada'}, $country';
+
+        return formattedAddress;
+      } else {
+        print('Localização não encontrada.');
+        return "Localização não encontrada.";
+      }
     } else {
-      return 'Localização não encontrada.';
+      return 'Falha ao obter a localização';
     }
-  } else {
-    throw Exception('Falha ao obter a localização');
   }
-}
 
+  // Função de navegação para a página de avaliação
   void _navigateToAvaliarLocalPage() {
     if (latitude != null && longitude != null) {
       Navigator.push(

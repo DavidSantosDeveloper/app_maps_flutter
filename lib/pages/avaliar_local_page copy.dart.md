@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:image_picker/image_picker.dart';  // Para selecionar as imagens
-import 'dart:io';  // Para lidar com arquivos de imagem
+import 'package:flutter_rating_bar/flutter_rating_bar.dart'; // Adicionando o pacote
 import '../components/botao_acessivel.dart';
 import '../servicos/local_service.dart';
 
@@ -19,7 +17,6 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
   TextEditingController comentarioController = TextEditingController();
   bool isLoading = false;
   double rating = 0.0;  // A variável para armazenar a nota selecionada
-  List<XFile>? _imagensSelecionadas = [];  // Lista para armazenar as imagens selecionadas
 
   // Função para validar a nota
   bool validarNota(double nota) {
@@ -30,14 +27,6 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
   Future<void> avaliarLocal(String latitude, String longitude, double nota, String comentario) async {
     final localService = LocalService();
     await localService.avaliarLocal(latitude, longitude, nota.toString(), comentario);
-  }
-
-  // Função para enviar a foto separadamente para o endpoint /Fotos/upload
-  Future<void> enviarFotoSeparada(List<XFile>? imagens) async {
-    final localService = LocalService();
-    if (imagens != null && imagens.isNotEmpty) {
-      // await localService.uploadImagem(imagens as XFile);
-    }
   }
 
   // Função para mostrar o dialog
@@ -57,17 +46,6 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
         ],
       ),
     );
-  }
-
-  // Função para escolher imagens da galeria
-  Future<void> _selecionarImagens() async {
-    final picker = ImagePicker();
-    final List<XFile>? imagens = await picker.pickMultiImage();
-    if (imagens != null && imagens.isNotEmpty) {
-      setState(() {
-        _imagensSelecionadas = imagens;
-      });
-    }
   }
 
   @override
@@ -111,17 +89,6 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
               maxLines: 4,
             ),
             SizedBox(height: 20),
-            // Botão para escolher imagens
-            ElevatedButton(
-              onPressed: _selecionarImagens,
-              child: Text('Escolher Imagens'),
-            ),
-            SizedBox(height: 10),
-            // Exibir imagens selecionadas
-            _imagensSelecionadas!.isEmpty
-                ? Text("Nenhuma imagem selecionada.")
-                : Text("${_imagensSelecionadas!.length} imagem(s) selecionada(s)."),
-            SizedBox(height: 20),
             BotaoAcessivel(
               onPress: () {
                 enviarAvaliacao();
@@ -134,7 +101,7 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
     );
   }
 
-  // Função para enviar a avaliação e a foto
+  // Função para enviar a avaliação
   Future<void> enviarAvaliacao() async {
     final comentario = comentarioController.text;
 
@@ -153,12 +120,7 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
     });
 
     try {
-      // Envia a foto para o endpoint /Fotos/upload
-      await enviarFotoSeparada(_imagensSelecionadas);
-
-      // Envia a avaliação
       await avaliarLocal(widget.latitude, widget.longitude, rating, comentario);
-
       _showDialog('Sucesso', 'Avaliação enviada com sucesso!');
       Navigator.pop(context);
     } catch (error) {
