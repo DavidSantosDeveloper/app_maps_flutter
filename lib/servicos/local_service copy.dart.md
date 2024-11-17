@@ -1,7 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
-import 'dart:io';
 import 'package:intl/intl.dart';
 
 class LocalService {
@@ -205,37 +204,29 @@ class LocalService {
 
 
 
-Future<void> uploadImagem(List<XFile>? imagens) async {
-    if (imagens == null || imagens.isEmpty) {
-      print('Nenhuma imagem selecionada para upload.');
-      return;
-    }
+Future<void> uploadImagem(XFile imagem) async {
+  final uri = Uri.parse('https://backendappmapsacessibilidade-production.up.railway.app/Foto/upload');
+  final request = http.MultipartRequest('POST', uri);
 
-    final uri = Uri.parse(
-        'https://backendappmapsacessibilidade-production.up.railway.app/Foto/upload');
-    final request = http.MultipartRequest('POST', uri);
+  // Adiciona a imagem como multipart usando XFile
+  request.files.add(
+    await http.MultipartFile.fromPath(
+      'file', // Nome do campo esperado pelo servidor
+      imagem.path,
+    ),
+  );
 
-    // Adiciona todas as imagens ao request
-    for (var imagem in imagens) {
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'files', // Nome do campo esperado pelo servidor
-          imagem.path,
-        ),
-      );
+  try {
+    final response = await request.send();
+    if (response.statusCode == 201) {
+      print('Upload bem-sucedido');
+    } else {
+      print('Falha no upload. Código de status: ${response.statusCode}');
     }
-
-    try {
-      final response = await request.send();
-      if (response.statusCode == 201) {
-        print('Upload bem-sucedido de todas as imagens.');
-      } else {
-        print('Falha no upload. Código de status: ${response.statusCode}');
-      }
-    } catch (error) {
-      print('Erro durante o upload: $error');
-    }
+  } catch (error) {
+    print('Erro durante o upload: $error');
   }
+}
 
  
 

@@ -32,12 +32,14 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
     await localService.avaliarLocal(latitude, longitude, nota.toString(), comentario);
   }
 
-  // Função para enviar a foto separadamente para o endpoint /Fotos/upload
   Future<void> enviarFotoSeparada(List<XFile>? imagens) async {
-    final localService = LocalService();
-    if (imagens != null && imagens.isNotEmpty) {
-      // await localService.uploadImagem(imagens as XFile);
-    }
+  if (imagens == null || imagens.isEmpty) {
+    print('Nenhuma imagem para enviar.');
+    return;
+  }
+
+  final localService = LocalService();
+  await localService.uploadImagem(imagens); // Essa função já gerencia o envio.
   }
 
   // Função para mostrar o dialog
