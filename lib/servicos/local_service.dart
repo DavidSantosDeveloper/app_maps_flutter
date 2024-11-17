@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
@@ -134,10 +136,12 @@ class LocalService {
     return null;
   }
 
-  Future<void> avaliarLocal(
+  Future<int> avaliarLocal(
       String latitude, String longitude, String nota, String comentario) async {
     final String url =
         'https://backendappmapsacessibilidade-production.up.railway.app/Avaliacao';
+
+        var idRetornado;
 
     var now = DateTime.now();
     var formatter = DateFormat('yyyy-MM-dd');
@@ -195,20 +199,36 @@ class LocalService {
 
       if (response.statusCode == 201) {
         print('Avaliação enviada com sucesso!');
+        var dadosRetorno = json.decode(response.body);
+
+        if (dadosRetorno is Map<String, dynamic>) {
+          idRetornado = dadosRetorno['id'];
+          print('ID da avaliacao cadastrado: $idRetornado');
+          
+        }
+
       } else {
         print('Erro ao enviar avaliação: ${response.statusCode}');
       }
     } catch (error) {
       print('Erro ao fazer requisição: $error');
     }
+
+
+
+       return  Future.value(idRetornado)  ;
+  
   }
 
 
 
-Future<void> uploadImagem(List<XFile>? imagens) async {
+Future< List<dynamic>> uploadImagem(List<XFile>? imagens) async {
+
+    List lista_de_id_imagens_cadrastradas=[];
+
     if (imagens == null || imagens.isEmpty) {
       print('Nenhuma imagem selecionada para upload.');
-      return;
+      return lista_de_id_imagens_cadrastradas;
     }
 
     final uri = Uri.parse(
@@ -227,14 +247,89 @@ Future<void> uploadImagem(List<XFile>? imagens) async {
 
     try {
       final response = await request.send();
+
+       // Converte o resultado em texto
+     final responseBody = await http.Response.fromStream(response);
+     final List<dynamic> jsonData = jsonDecode(responseBody.body);
+
       if (response.statusCode == 201) {
         print('Upload bem-sucedido de todas as imagens.');
+        print('Resposta do servidor: ${responseBody.body}');
+        for (var imageResponse in jsonData) {
+             print('Imagem registrada com ID: ${imageResponse['id']}');
+             lista_de_id_imagens_cadrastradas.add(imageResponse['id']);
+
+             print(imageResponse);
+        }
       } else {
         print('Falha no upload. Código de status: ${response.statusCode}');
       }
     } catch (error) {
       print('Erro durante o upload: $error');
+
+      
     }
+
+    return lista_de_id_imagens_cadrastradas;
+
+  }
+
+  Future<void> relacionarFotoComAvaliacao(int? id_avaliacao,List lista_de_id_de_imagens_cadrastradas) async{
+            final String url =
+        'https://backendappmapsacessibilidade-production.up.railway.app/itemFoto';
+
+
+   
+
+
+    for(var id_foto in lista_de_id_de_imagens_cadrastradas){
+           Map<String, dynamic> dadosItemFoto = {
+                'avaliacao': {
+                  'id': id_avaliacao,
+                },
+                'foto': {
+                  'id': id_foto,
+                }
+            };
+            final String jsonData = json.encode(dadosItemFoto);
+
+
+
+            try {
+                final response = await http.post(
+                  Uri.parse(url),
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: jsonData,
+                );
+
+                if (response.statusCode == 201) {
+                  print('Relacao Avaliacao e foto feita com  com sucesso!');
+                  var dadosRetorno = json.decode(response.body);
+
+                  if (dadosRetorno is Map<String, dynamic>) {
+                    print('objeto ItemFoto do resposta do server: $dadosRetorno');
+                    
+                  } else {
+                    print('Resposta inesperada: $dadosRetorno');
+                  }
+                  } else {
+                    print('Erro ao enviar ItemFoto : ${response.statusCode}');
+                  }
+                } catch (error) {
+                  print('Erro ao fazer requisição: $error');
+                }
+
+
+    }
+
+
+    
+
+
+
+
   }
 
  

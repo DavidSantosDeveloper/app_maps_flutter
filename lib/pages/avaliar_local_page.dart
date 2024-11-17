@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';  // Para selecionar as imagens
@@ -8,6 +10,7 @@ import '../servicos/local_service.dart';
 class AvaliarLocalPage extends StatefulWidget {
   final String latitude;
   final String longitude;
+ 
   
   AvaliarLocalPage({Key? key, required this.latitude, required this.longitude}) : super(key: key);
 
@@ -21,25 +24,45 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
   double rating = 0.0;  // A variável para armazenar a nota selecionada
   List<XFile>? _imagensSelecionadas = [];  // Lista para armazenar as imagens selecionadas
 
+   List lista_de_id_de_imagens_cadrastradas=[];
+   int? id_avaliacao;
+
   // Função para validar a nota
   bool validarNota(double nota) {
     return nota >= 1 && nota <= 5;
   }
 
   // Função para enviar a avaliação
-  Future<void> avaliarLocal(String latitude, String longitude, double nota, String comentario) async {
+  Future<int?> avaliarLocal(String latitude, String longitude, double nota, String comentario) async {
     final localService = LocalService();
-    await localService.avaliarLocal(latitude, longitude, nota.toString(), comentario);
+    int? id_do_local_cadrastrado=await localService.avaliarLocal(latitude, longitude, nota.toString(), comentario);
+
+    if(id_do_local_cadrastrado==null){
+        return null;
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>ID DO LOCAL NULL<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+    }
+
+    
+
+    this.id_avaliacao=id_do_local_cadrastrado;
+
+
+    print("id do objeto avaliar local foi atualizado!${id_do_local_cadrastrado}");
+    return id_avaliacao;
   }
 
-  Future<void> enviarFotoSeparada(List<XFile>? imagens) async {
+
+  Future<List?> enviarFotoSeparada(List<XFile>? imagens) async {
   if (imagens == null || imagens.isEmpty) {
     print('Nenhuma imagem para enviar.');
-    return;
+    return null;
   }
 
-  final localService = LocalService();
-  await localService.uploadImagem(imagens); // Essa função já gerencia o envio.
+    final localService = LocalService();
+    List lista_de_id_de_imagens_cadrastradas=await localService.uploadImagem(imagens); 
+    this.lista_de_id_de_imagens_cadrastradas=lista_de_id_de_imagens_cadrastradas;
+    return lista_de_id_de_imagens_cadrastradas;
+
   }
 
   // Função para mostrar o dialog
@@ -160,6 +183,11 @@ class _AvaliarLocalPageState extends State<AvaliarLocalPage> {
 
       // Envia a avaliação
       await avaliarLocal(widget.latitude, widget.longitude, rating, comentario);
+
+      LocalService local=new LocalService();
+      await local.relacionarFotoComAvaliacao(this.id_avaliacao,this.lista_de_id_de_imagens_cadrastradas);
+
+      
 
       _showDialog('Sucesso', 'Avaliação enviada com sucesso!');
       Navigator.pop(context);
