@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:acessibilidade_app/servicos/local_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -16,10 +17,13 @@ class _MapaLocaisState extends State<MapaLocais> {
   final MapController _mapController = MapController();
   double? latitude;
   double? longitude;
+  String? Localizacao;
   bool isLoading = true;
   String? error;
   List<Map<String, dynamic>> searchResults = [];
   TextEditingController _searchController = TextEditingController();
+
+  LocalService local=new LocalService();
 
   @override
   void initState() {
@@ -42,6 +46,10 @@ class _MapaLocaisState extends State<MapaLocais> {
         });
         // Move o mapa para a localização atual
         _mapController.move(LatLng(latitude!, longitude!), 15.0);
+        LocalService local=new LocalService();
+        this.Localizacao=await local.getLocationByCoordinates(latitude!, longitude!) as String? ?? "Não foi possivel obter a localização.";
+
+
       } catch (e) {
         setState(() {
           error = 'Erro ao obter localização: $e';
@@ -129,6 +137,7 @@ class _MapaLocaisState extends State<MapaLocais> {
                       double lat = double.tryParse(location["lat"]) ?? 0.0;
                       double lon = double.tryParse(location["lon"]) ?? 0.0;
                       _moveToLocation(lat, lon);
+                       this._atualizaNomeDoLocalAtual();
                     },
                   );
                 },
@@ -185,6 +194,17 @@ class _MapaLocaisState extends State<MapaLocais> {
     _mapController.move(LatLng(lat, lon), 15.0);
   }
 
+
+
+
+
+   Future<void> _atualizaNomeDoLocalAtual() async {
+            LocalService local=new LocalService();
+
+          this.Localizacao=await local.getLocationByCoordinates(this.latitude!, this.longitude!) as String?  ?? "Não foi possivel obter a localização.";
+
+          print(">>>>>>>>>>>>>localizacao atual: ${this.Localizacao ?? ""}");
+    }
   // Função para buscar locais via API
   Future<void> _searchLocation(String query) async {
     final url = Uri.parse('https://nominatim.openstreetmap.org/search?q=$query&format=json&addressdetails=1&limit=5');
